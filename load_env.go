@@ -67,6 +67,11 @@ type envTag struct {
 	hasMap       map[string]bool
 }
 
+// LoadEnv loads environment variables into a struct.
+// The struct must have a tag of "env" and the tag must be in the format of:
+//  env:"NAME"
+// 	env:"NAME,required"
+// 	env:"NAME,required,name=NAME_VAR"
 func LoadEnv(target interface{}) error {
 	reflectOf := reflect.TypeOf(target)
 	if reflectOf.Kind() != reflect.Ptr {
