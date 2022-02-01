@@ -1,4 +1,4 @@
-package load_nev
+package load_env
 
 import (
 	"errors"
