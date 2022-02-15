@@ -12,8 +12,6 @@ import (
 var tagSetParamCount = map[string]int{
 	"required": 1,
 	"name":     2,
-	"min":      2,
-	"max":      2,
 	"default":  2,
 }
 
@@ -61,8 +59,6 @@ func contains(slice []reflect.Kind, item reflect.Kind) bool {
 type envTag struct {
 	name         string
 	required     bool
-	min          float64
-	max          float64
 	defaultValue string
 	hasMap       map[string]bool
 }
@@ -85,7 +81,7 @@ func LoadEnv(target interface{}) error {
 	for i := 0; i < reflectOf.Elem().NumField(); i++ {
 		field := reflectOf.Elem().Field(i)
 		if !contains(allowTypes, field.Type.Kind()) {
-			return errors.New(fmt.Sprintf("field %s with type %s is not allowed", field.Name, field.Type.Kind()))
+			return fmt.Errorf("field %s with type %s is not allowed", field.Name, field.Type.Kind())
 		}
 
 		options := field.Tag.Get("env")
@@ -96,7 +92,7 @@ func LoadEnv(target interface{}) error {
 
 		valueFromEnv := os.Getenv(tag.name)
 		if tag.required && valueFromEnv == "" {
-			return errors.New(fmt.Sprintf("env %s is required", tag.name))
+			return fmt.Errorf("env %s is required", tag.name)
 		}
 
 		if valueFromEnv == "" {
@@ -117,51 +113,39 @@ func setValueToStructFromEnvTag(target interface{}, field reflect.StructField, v
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		parsed, err := strconv.ParseInt(valueFromEnv, 10, 64)
 		if err != nil {
-			return errors.New(fmt.Sprintf("env %s must be a number", tag.name))
-		}
-
-		if tag.min != 0 && parsed < int64(tag.min) {
-			return errors.New(fmt.Sprintf("env %s must be greater than %f", tag.name, tag.min))
-		}
-		if tag.max != 0 && parsed > int64(tag.max) {
-			return errors.New(fmt.Sprintf("env %s must be less than %f", tag.name, tag.max))
+			return fmt.Errorf("env %s must be a number", tag.name)
 		}
 
 		reflect.ValueOf(target).Elem().Field(fieldNumber).SetInt(parsed)
-		break
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		parsed, err := strconv.ParseUint(valueFromEnv, 10, 64)
 		if err != nil {
-			return errors.New(fmt.Sprintf("env %s must be a number", tag.name))
+			return fmt.Errorf("env %s must be a number", tag.name)
 		}
 
 		if tag.min != 0 && parsed < uint64(tag.min) {
-			return errors.New(fmt.Sprintf("env %s must be greater than %f", tag.name, tag.min))
+			return fmt.Errorf("env %s must be greater than %f", tag.name, tag.min)
 		}
 
 		if tag.max != 0 && parsed > uint64(tag.max) {
-			return errors.New(fmt.Sprintf("env %s must be less than %f", tag.name, tag.max))
+			return fmt.Errorf("env %s must be less than %f", tag.name, tag.max)
 		}
 
 		reflect.ValueOf(target).Elem().Field(fieldNumber).SetUint(parsed)
-		break
 	case reflect.Float32, reflect.Float64:
-		parsed, err := strconv.ParseFloat(valueFromEnv, 10)
+		parsed, err := strconv.ParseFloat(valueFromEnv, 64)
 		if err != nil {
-			return errors.New(fmt.Sprintf("env %s must be a number", tag.name))
+			return fmt.Errorf("env %s must be a number", tag.name)
 		}
 		reflect.ValueOf(target).Elem().Field(fieldNumber).SetFloat(parsed)
-		break
 	case reflect.String:
 		reflect.ValueOf(target).Elem().Field(fieldNumber).SetString(valueFromEnv)
-		break
 	case reflect.Bool:
 		parsed, err := strconv.ParseBool(valueFromEnv)
 		if err != nil {
-			return errors.New(fmt.Sprintf("env %s must be a boolean", tag.name))
+			return fmt.Errorf("env %s must be a boolean", tag.name)
 		}
 		reflect.ValueOf(target).Elem().Field(fieldNumber).SetBool(parsed)
-		break
 	}
 
 	return nil
@@ -181,7 +165,7 @@ func extractOptionsFromString(options string, field reflect.StructField) (envTag
 		var optionValue string
 		if tagSetParamCount[optionKey] == 2 {
 			if len(splittedOption) < 2 {
-				return tag, errors.New(fmt.Sprintf("option %s must has a parameter", optionKey))
+				return tag, fmt.Errorf("option %s must has a parameter", optionKey)
 			}
 			optionValue = splittedOption[1]
 		}
@@ -190,29 +174,11 @@ func extractOptionsFromString(options string, field reflect.StructField) (envTag
 			return tag, errors.New("option name must has a parameter")
 		}
 
-		if optionKey == "min" || optionKey == "max" {
-			if !contains(numberTypes, field.Type.Kind()) {
-				return tag, errors.New(fmt.Sprintf("option %s must be used with a number type", optionKey))
-			}
-		}
-
 		switch optionKey {
 		case "required":
 			tag.required = true
 		case "name":
 			tag.name = optionValue
-		case "min":
-			parsed, err := strconv.ParseFloat(optionValue, 64)
-			if err != nil {
-				return tag, errors.New(fmt.Sprintf("option %s must be a number", optionKey))
-			}
-			tag.min = parsed
-		case "max":
-			parsed, err := strconv.ParseFloat(optionValue, 64)
-			if err != nil {
-				return tag, errors.New(fmt.Sprintf("option %s must be a number", optionKey))
-			}
-			tag.max = parsed
 		case "default":
 			tag.defaultValue = optionValue
 		}
