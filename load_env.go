@@ -123,14 +123,6 @@ func setValueToStructFromEnvTag(target interface{}, field reflect.StructField, v
 			return fmt.Errorf("env %s must be a number", tag.name)
 		}
 
-		if tag.min != 0 && parsed < uint64(tag.min) {
-			return fmt.Errorf("env %s must be greater than %f", tag.name, tag.min)
-		}
-
-		if tag.max != 0 && parsed > uint64(tag.max) {
-			return fmt.Errorf("env %s must be less than %f", tag.name, tag.max)
-		}
-
 		reflect.ValueOf(target).Elem().Field(fieldNumber).SetUint(parsed)
 	case reflect.Float32, reflect.Float64:
 		parsed, err := strconv.ParseFloat(valueFromEnv, 64)
