@@ -74,8 +74,6 @@ func LoadEnv(target interface{}) error {
 		return errors.New("target must be a pointer")
 	}
 
-	contains()
-
 	if reflectOf.Elem().Kind() != reflect.Struct {
 		return errors.New("target must be a pointer to a struct")
 	}
