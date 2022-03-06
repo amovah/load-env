@@ -3,8 +3,9 @@ package load_env
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
-import "github.com/stretchr/testify/assert"
 
 type TestStruct struct {
 	Port int `env:"name=PORT,default=8080"`
