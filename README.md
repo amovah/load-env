@@ -13,14 +13,16 @@ go get github.com/amovah/load-env
 ## Usage
 
 First you need to define a struct with load-env tags:
+
 ```go
 type Config struct {
-    Port int `env:"name=PORT",default=8080`
-    Host string `env:"name=HOST",required`
+    Port int `env:"name=PORT,default=8080"`
+    Host string `env:"name=HOST,required"`
 }
 ```
 
 Then simply call LoadEnv on your struct:
+
 ```go
 func main() {
     config := Config{}
@@ -31,6 +33,6 @@ func main() {
 
 ## Tags
 
-- name: The name of the environment variable.
-- default: The default value if the environment variable is not set.
-- required: If the environment variable is not set, the function returns an error.
+-   name: The name of the environment variable.
+-   default: The default value if the environment variable is not set.
+-   required: If the environment variable is not set, the function returns an error.
