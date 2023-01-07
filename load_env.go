@@ -45,6 +45,7 @@ var allowTypes = []reflect.Kind{
 	reflect.Float64,
 	reflect.String,
 	reflect.Bool,
+	reflect.Struct,
 }
 
 func contains(slice []reflect.Kind, item reflect.Kind) bool {
@@ -82,6 +83,17 @@ func LoadEnv(target interface{}) error {
 		field := reflectOf.Elem().Field(i)
 		if !contains(allowTypes, field.Type.Kind()) {
 			return fmt.Errorf("field %s with type %s is not allowed", field.Name, field.Type.Kind())
+		}
+
+		if field.Type.Kind() == reflect.Struct {
+			innerStruct := reflect.New(field.Type)
+			err := LoadEnv(innerStruct.Interface())
+			if err != nil {
+				return err
+			}
+
+			reflect.ValueOf(target).Elem().Field(i).Set(innerStruct.Elem())
+			continue
 		}
 
 		options := field.Tag.Get("env")
@@ -138,6 +150,8 @@ func setValueToStructFromEnvTag(target interface{}, field reflect.StructField, v
 			return fmt.Errorf("env %s must be a boolean", tag.name)
 		}
 		reflect.ValueOf(target).Elem().Field(fieldNumber).SetBool(parsed)
+	default:
+		return fmt.Errorf("unsupported kind: %s", field.Type.Kind())
 	}
 
 	return nil
